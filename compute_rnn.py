@@ -49,14 +49,28 @@ def MinMaxScaler(data):
 # --------------------------------------------------- #
 # DEINE MODEL
 # --------------------------------------------------- #
-def model(X, Y):
+def model(X, Y, variables):
     # build a LSTM network
     cell = tf.contrib.rnn.BasicLSTMCell(
         num_units=hidden_dim, state_is_tuple=True, activation=tf.tanh)
     outputs, _states = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
-    logits = tf.contrib.layers.fully_connected(
-        outputs[:, -1], output_dim, activation_fn=None)  # We use the last cell's output
+    # logits = tf.contrib.layers.fully_connected(
+    #     outputs[:, -1], output_dim, activation_fn=None)  # We use the last cell's output
+
+    logits  = tf.nn.xw_plus_b( outputs[:,-1], variables['w_1'], variables['b_1'])
+
     return logits 
+
+# --------------------------------------------------- #
+# DEINE VARIABLES
+# --------------------------------------------------- #
+def variable_data():
+  out = {
+    'gs'  : tf.Variable(0, name='global_step', trainable=False),
+    'b_1' : tf.Variable(tf.random_normal(shape=[output_dim]), dtype=tf.float32),
+    'w_1' : tf.Variable(tf.random_normal(shape=[hidden_dim, output_dim]), dtype=tf.float32), 
+  }
+  return out
 
 
 # --------------------------------------------------- #
@@ -73,7 +87,7 @@ data_dim = 5
 hidden_dim = 20 #10
 output_dim = 1
 learning_rate = 0.01
-iterations = 7500
+iterations = 3500
 
 # Open, High, Low, Volume, Close
 xy = np.loadtxt('web-stock.csv', delimiter=',')
@@ -107,14 +121,17 @@ trainY, testY = np.array(dataY[0:train_size]), np.array(
 X = tf.placeholder(tf.float32, [None, seq_length, data_dim])
 Y = tf.placeholder(tf.float32, [None, 1])
 
+variables = variable_data()
 print(" x shape : {}".format(X.get_shape().as_list()))
 print(" y shape : {}".format(Y.get_shape().as_list()))
 
-logits = model(X, Y)
-
+logits = model(X, Y, variables)
 
 # cost/loss
 loss = tf.reduce_sum(tf.square(logits - Y))  # sum of the squares
+## this appears to do the same thing, but is not the same thing
+## loss = tf.losses.mean_squared_error(labels=Y, predictions=logits)
+
 # optimizer
 optimizer = tf.train.AdamOptimizer(learning_rate)
 train = optimizer.minimize(loss)
@@ -141,13 +158,9 @@ with tf.Session() as sess:
                     targets: testY, predictions: test_predict})
     print("RMSE: {}".format(rmse_val))
 
-
+    # this will set the MATLAB variables
     eng.workspace['testY'] = matlab.double( testY.tolist() ) 
     eng.workspace['test_predict'] = matlab.double( test_predict.tolist() ) 
 
-    # # Plot predictions
-    # plt.plot(testY)
-    # plt.plot(test_predict)
-    # plt.xlabel("Time Period")
-    # plt.ylabel("Stock Price")
-    # plt.show()
+    # within MATLAB, call this to plot
+    # >>plot( [testY, test_predict], '+-' )
