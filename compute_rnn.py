@@ -81,13 +81,19 @@ def variable_data():
 eng = matlab.engine.connect_matlab('MATLAB_1156')
 
 
-# train Parameters
-seq_length = 3 # 7
+# number of 'previous' input vectors packed into a single time step
+seq_length = 15 # 7
+
+# size of the INPUT vector associated with a single time step 
 data_dim = 5
-hidden_dim = 20 #10
+
+# size of the OUTPUT vector associated with a single time step 
 output_dim = 1
+
+# number of hidden states to keep track of
+hidden_dim = 20 #10
 learning_rate = 0.01
-iterations = 3500
+iterations = 17500
 
 # Open, High, Low, Volume, Close
 xy = np.loadtxt('web-stock.csv', delimiter=',')
@@ -99,14 +105,20 @@ y = xy[:, [-1]]  # Close as label
 # build a dataset
 dataX = []
 dataY = []
-for i in range(0, len(y) - seq_length):
+for i in range(0, len(y) - seq_length - 1):
     _x = x[i:i + seq_length]
-    _y = y[i + seq_length]  # Next close price
+    # _y = y[i + seq_length]  # Next close price
+    _y = y[i + seq_length + 1]  # two later close price
     # print(_x, "->", _y)
     dataX.append(_x)
     dataY.append(_y)
 
-# print(dataY)
+# dataX = np.asarray( dataX )
+# dataY = np.asarray( dataY )
+# print(dataX.shape)
+# print(dataY.shape)
+# (716, 15, 5)    => each of the 716 :) inputs has 15 time steps with 5 points each 
+# (716, 1)        => each of the 716 :) outputs has 1 point
 # quit()
 
 # train/test split
