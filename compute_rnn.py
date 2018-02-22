@@ -80,7 +80,6 @@ def variable_data():
 # connect to matlab
 eng = matlab.engine.connect_matlab('MATLAB_1156')
 
-
 # number of 'previous' input vectors packed into a single time step
 seq_length = 15 # 7
 
@@ -93,7 +92,7 @@ output_dim = 1
 # number of hidden states to keep track of
 hidden_dim = 20 #10
 learning_rate = 0.01
-iterations = 17500
+iterations = 7500
 
 # Open, High, Low, Volume, Close
 xy = np.loadtxt('web-stock.csv', delimiter=',')
@@ -128,6 +127,13 @@ trainX, testX = np.array(dataX[0:train_size]), np.array(
     dataX[train_size:len(dataX)])
 trainY, testY = np.array(dataY[0:train_size]), np.array(
     dataY[train_size:len(dataY)])
+
+# grab sequence from MATLAB
+trainX = np.asarray( eng.workspace['trainX'] )
+trainY = np.asarray( eng.workspace['trainY'] )
+testX  = np.asarray( eng.workspace['testX'] )
+testY  = np.asarray( eng.workspace['testY'] )
+
 
 # input place holders
 X = tf.placeholder(tf.float32, [None, seq_length, data_dim])
